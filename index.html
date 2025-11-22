@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>MonHubLuaGuard</title>
+
 <style>
     body {
         font-family: "Consolas", monospace;
@@ -45,38 +46,59 @@
         word-break: break-all;
     }
 </style>
+
 </head>
 
 <body id="main">
 
 <script>
-// ---------------- RAW MODE ----------------
+// ======================================================
+//               RAW VIEWER MODE (SAFE MODE)
+// ======================================================
 if (location.hash.startsWith("#raw=")) {
-    const encoded = location.hash.slice(5);
 
+    // XÓA TOÀN BỘ NỘI DUNG TRƯỚC KHI LỘ RA (ANTI‑F5 LEAK)
+    document.body.innerHTML = "";
+    document.body.style.background = "#000";
+
+    const encoded = location.hash.slice(5);
     let raw = "";
+
     try {
+        // Giải mã base64 an toàn
         raw = decodeURIComponent(escape(atob(encoded)));
     } catch {
-        document.body.innerHTML = "<pre style='color:#f44'>Decode error</pre>";
+        document.body.textContent = "Decode Error.";
+        document.body.style.color = "#f44";
         throw "";
     }
 
-    // HTML protection
-    if (/<[a-z][\s\S]*>/i.test(raw)) {
-        document.body.innerHTML =
-            "<pre style='color:#f44; font-size:20px; padding:20px;'>protected by Mon Hub LuaGuard</pre>";
+    // NGĂN HTML/XSS 100% (Không để parse HTML)
+    if (raw.includes("<") || raw.includes(">")) {
+        document.body.textContent = "protected by Mon Hub LuaGuard";
+        document.body.style.color = "#00eaff";
+        document.body.style.fontSize = "20px";
+        document.body.style.padding = "20px";
         throw "";
     }
 
-    // RAW text only
-    document.body.innerHTML =
-        "<pre style='color:#0f0; font-size:17px; padding:20px;'>" +
-        raw.replace(/[<>]/g, "") +
-        "</pre>";
-    throw "";
+    // SHOW RAW (TEXT THUẦN, KHÔNG BAO GIỜ PARSE)
+    const pre = document.createElement("pre");
+    pre.textContent = raw; // <- KHÔNG dùng innerHTML
+    pre.style.color = "#00ff00";
+    pre.style.fontSize = "17px";
+    pre.style.padding = "20px";
+    document.body.appendChild(pre);
+
+    throw ""; // STOP WEB APP MODE
 }
 </script>
+
+
+
+<!-- ======================================================
+                  TẠO RAW LINK MODE
+====================================================== -->
 
 <h1>🌙 MonHubLuaGuard — Create Raw Link</h1>
 
@@ -94,7 +116,12 @@ if (location.hash.startsWith("#raw=")) {
 
 <div id="outputLink"></div>
 
+
 <script>
+// ======================================================
+//             RAW GENERATOR (base64 + hash)
+// ======================================================
+
 function createText() {
     const txt = document.getElementById("inputText").value.trim();
     if (!txt) return alert("No content");
@@ -113,9 +140,10 @@ function createFile() {
 function makeLink(content) {
     const encoded = btoa(unescape(encodeURIComponent(content)));
 
-    // FIX CHO GITHUB PAGES
+    // Base URL
     const base = "https://monmon9ne.github.io/Raw-gen/";
 
+    // HASH MODE -> UNLIMITED LENGTH
     const link = base + "#raw=" + encoded;
 
     document.getElementById("outputLink").innerHTML =
