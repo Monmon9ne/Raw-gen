@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Create Raw Link</title>
+<title>MonHubLuaGuard</title>
 <style>
     body {
         font-family: "Consolas", monospace;
@@ -82,11 +82,11 @@
 </head>
 <body>
 
-<h1>🌙 Create Raw Link — Neon UI</h1>
+<h1>🌙 MonHubLuaGuard — Create Raw Link</h1>
 
 <div class="box">
     <h2>📝 Nhập văn bản</h2>
-    <textarea id="inputText" placeholder="Dán nội dung vào đây..."></textarea>
+    <textarea id="inputText" placeholder="Paste code vào đây..."></textarea>
     <button onclick="createLinkFromText()">Create Raw Link</button>
 </div>
 
@@ -99,42 +99,54 @@
 <div id="outputLink"></div>
 
 <script>
-// Tạo link từ input text
+/* --- RAW PAGE MODE DETECT --- */
+if (location.hash.startsWith("#raw=")) {
+    const encoded = location.hash.replace("#raw=", "");
+
+    try {
+        const raw = decodeURIComponent(escape(atob(encoded)));
+
+        // Nếu chứa HTML tag → bảo vệ
+        if (raw.includes("<") && raw.includes(">")) {
+            document.body.innerHTML =
+                "<pre style='color:#ff4444; padding:20px; font-size:18px;'>protected by Mon Hub LuaGuard</pre>";
+        } else {
+            // Only raw, no decoration
+            document.body.innerHTML =
+                "<pre style='white-space: pre-wrap; padding:20px; color:#0f0; font-size:17px;'>" +
+                raw.replace(/[<>]/g, "") + 
+                "</pre>";
+        }
+    } catch {
+        document.body.innerHTML =
+            "<pre style='color:#ff4444;'>Error decoding raw content.</pre>";
+    }
+    throw ""; // stop page
+}
+
+/* --- NORMAL GENERATOR PAGE --- */
+
 function createLinkFromText() {
     const text = document.getElementById("inputText").value.trim();
     if (!text) return alert("Bạn chưa nhập nội dung!");
-
     createRawLink(text);
 }
 
-// Tạo link từ file
 function createLinkFromFile() {
     const file = document.getElementById("fileInput").files[0];
     if (!file) return alert("Chưa chọn file!");
 
     const reader = new FileReader();
-    reader.onload = function(e) {
-        createRawLink(e.target.result);
-    };
+    reader.onload = e => createRawLink(e.target.result);
     reader.readAsText(file);
 }
 
-// Hàm tạo raw link
 function createRawLink(content) {
     const encoded = btoa(unescape(encodeURIComponent(content)));
     const rawUrl = window.location.origin + window.location.pathname + "#raw=" + encoded;
 
     document.getElementById("outputLink").innerHTML =
         `<b>Raw Link:</b><br><a href="${rawUrl}" target="_blank">${rawUrl}</a>`;
-}
-
-// Nếu URL có raw data → hiển thị raw
-if (location.hash.startsWith("#raw=")) {
-    const raw = decodeURIComponent(escape(atob(location.hash.replace("#raw=", ""))));
-    document.body.innerHTML = 
-        "<pre style='white-space: pre-wrap; padding:20px; color:#0f0; font-size:17px;'>" +
-        raw +
-        "</pre>";
 }
 </script>
 
